@@ -1,0 +1,44 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs:
+  - FLUTTER_VERSION: "3.16.5"
+
+workflows:
+  primary:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+
+    - git-clone@8: {}
+
+    - flutter-installer@0:
+        inputs:
+        - version: $FLUTTER_VERSION
+
+    - flutter-analyze@0:
+        inputs:
+        - project_location: "."
+
+    - flutter-test@0:
+        inputs:
+        - project_location: "."
+
+    - flutter-build@0:
+        inputs:
+        - project_location: "."
+        - platform: "ios"
+        - ios_output_type: "archive"
+        - ios_export_method: "development"
+        - ios_distribution_type: "development"
+
+    - deploy-to-bitrise-io@2: {}
+
+    - deploy-to-itunesconnect-application-loader@1:
+        inputs:
+        - ipa_path: "$BITRISE_FLUTTER_APP_DIR_PATH/build/ios/ipa/*.ipa"
+        - itunescon_user: $ITUNESCON_USER
+        - password: $ITUNESCON_PASSWORD
+        - app_id: $ITUNESCON_APP_ID
+        run_if: '{{getenv "ITUNESCON_USER" | ne ""}}'
