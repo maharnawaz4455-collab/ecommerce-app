@@ -1,0 +1,57 @@
+name: iOS Build Simple
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.5'
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: flutter pub get
+      
+    - name: Setup Xcode
+      run: |
+        sudo xcode-select --switch /Applications/Xcode.app
+        sudo xcodebuild -license accept
+        
+    - name: Build iOS App
+      run: |
+        flutter build ios --release --no-codesign
+        echo "iOS build completed successfully"
+        
+    - name: Create IPA file
+      run: |
+        cd ios
+        mkdir -p build/ios
+        cd build
+        zip -r ECommerce.ipa Payload/
+        echo "IPA file created"
+        
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ecommerce-app-ipa
+        path: ios/build/ECommerce.ipa
+        retention-days: 30
+        
+    - name: Upload build files
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: |
+          ios/build/
+          build/
+        retention-days: 7
